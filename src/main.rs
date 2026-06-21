@@ -8,8 +8,11 @@ const RECT_WIDTH: f32 = 40.;
 const RECT_HEIGHT: f32 = 20.;
 const RECT_GAP: f32 = 10.;
 
-const RECTS_ROWS: usize = 8;
-const RECTS_COLUMNS: usize = 12;
+const BAR_WIDTH: f32 = 120.;
+const BAR_HEIGHT: f32 = 10.;
+
+const RECTS_COLUMNS: usize = 16;
+const RECTS_ROWS: usize = 12;
 
 fn main() {
     App::new()
@@ -25,33 +28,34 @@ fn main() {
             ..Default::default()
         }))
         .insert_resource(ClearColor(Color::srgb(0.0, 0.0, 0.0)))
-        .add_systems(Startup, setup)
+        .add_systems(Startup, (setup, setup_rects, setup_bar))
         .run();
 }
 
 #[derive(Component)]
 struct Rect;
 
-fn setup(
+fn setup(mut commands: Commands) {
+    commands.spawn(Camera2d);
+}
+
+fn setup_rects(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut matriels: ResMut<Assets<ColorMaterial>>,
 ) {
-    commands.spawn(Camera2d);
-
     let rect_mesh = meshes.add(Rectangle::new(RECT_WIDTH, RECT_HEIGHT));
     let rect_color = Color::srgba(1., 1., 1., 1.);
-    let rect_x = 0.; //WINDOW_WIDTH as f32 / 2. - RECT_WIDTH / 2.;
     let rect_y = WINDOW_HEIGHT as f32 / 2. - RECT_HEIGHT / 2. - WINDOW_MARGIN;
 
-    for row in 0..RECTS_ROWS {
-        for column in 0..RECTS_COLUMNS {
+    for i in 1..=(RECTS_COLUMNS / 2) {
+        for j in 0..RECTS_ROWS {
             commands.spawn((
                 Mesh2d(rect_mesh.clone()),
                 MeshMaterial2d(matriels.add(rect_color)),
                 Transform::from_xyz(
-                    rect_x - (RECT_WIDTH + RECT_GAP) * row as f32,
-                    rect_y - (RECT_HEIGHT + RECT_GAP) * column as f32,
+                    (RECT_WIDTH + RECT_GAP) * i as f32,
+                    rect_y - (RECT_HEIGHT + RECT_GAP) * j as f32,
                     0.,
                 ),
                 Rect,
@@ -60,12 +64,32 @@ fn setup(
                 Mesh2d(rect_mesh.clone()),
                 MeshMaterial2d(matriels.add(rect_color)),
                 Transform::from_xyz(
-                    rect_x + (RECT_WIDTH + RECT_GAP) * row as f32,
-                    rect_y - (RECT_HEIGHT + RECT_GAP) * column as f32,
+                    -(RECT_WIDTH + RECT_GAP) * i as f32,
+                    rect_y - (RECT_HEIGHT + RECT_GAP) * j as f32,
                     0.,
                 ),
                 Rect,
             ));
         }
     }
+}
+
+fn setup_bar(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut matriels: ResMut<Assets<ColorMaterial>>,
+) {
+    let rect_mesh = meshes.add(Rectangle::new(BAR_WIDTH, BAR_HEIGHT));
+    let rect_color = Color::srgba(1., 1., 1., 1.);
+
+    commands.spawn((
+        Mesh2d(rect_mesh.clone()),
+        MeshMaterial2d(matriels.add(rect_color)),
+        Transform::from_xyz(
+            0.,
+            -(WINDOW_HEIGHT as f32) / 2. + WINDOW_MARGIN + RECT_GAP,
+            0.,
+        ),
+        Rect,
+    ));
 }
