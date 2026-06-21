@@ -11,7 +11,7 @@ const RECT_WIDTH: f32 = 40.;
 const RECT_HEIGHT: f32 = 20.;
 const RECT_GAP: f32 = 10.;
 
-const BAR_WIDTH: f32 = 120.;
+const BAR_WIDTH: f32 = 140.;
 const BAR_HEIGHT: f32 = 10.;
 
 const RECTS_COLUMNS: usize = 14;
@@ -107,7 +107,8 @@ fn bar_position(
 ) {
     if let Some(position) = window.cursor_position() {
         const HWW: f32 = (WINDOW_WIDTH / 2) as f32;
+        const HBW: f32 = BAR_WIDTH / 2.;
         let x = position.x - HWW as f32;
-        bar.translation.x = x.clamp(-HWW, HWW);
+        bar.translation.x = x.clamp(-HWW + HBW, HWW - HBW);
     }
 }
