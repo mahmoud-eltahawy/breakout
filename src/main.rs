@@ -1,4 +1,7 @@
-use bevy::{prelude::*, window::WindowLevel};
+use bevy::{
+    prelude::*,
+    window::{PrimaryWindow, WindowLevel},
+};
 
 const WINDOW_WIDTH: u32 = 800;
 const WINDOW_HEIGHT: u32 = 600;
@@ -11,8 +14,8 @@ const RECT_GAP: f32 = 10.;
 const BAR_WIDTH: f32 = 120.;
 const BAR_HEIGHT: f32 = 10.;
 
-const RECTS_COLUMNS: usize = 16;
-const RECTS_ROWS: usize = 12;
+const RECTS_COLUMNS: usize = 14;
+const RECTS_ROWS: usize = 9;
 
 fn main() {
     App::new()
@@ -29,6 +32,7 @@ fn main() {
         }))
         .insert_resource(ClearColor(Color::srgb(0.0, 0.0, 0.0)))
         .add_systems(Startup, (setup, setup_rects, setup_bar))
+        .add_systems(Update, bar_position)
         .run();
 }
 
@@ -74,6 +78,9 @@ fn setup_rects(
     }
 }
 
+#[derive(Component)]
+struct Bar;
+
 fn setup_bar(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -90,6 +97,17 @@ fn setup_bar(
             -(WINDOW_HEIGHT as f32) / 2. + WINDOW_MARGIN + RECT_GAP,
             0.,
         ),
-        Rect,
+        Bar,
     ));
+}
+
+fn bar_position(
+    window: Single<&Window, With<PrimaryWindow>>,
+    mut bar: Single<&mut Transform, With<Bar>>,
+) {
+    if let Some(position) = window.cursor_position() {
+        const HWW: f32 = (WINDOW_WIDTH / 2) as f32;
+        let x = position.x - HWW as f32;
+        bar.translation.x = x.clamp(-HWW, HWW);
+    }
 }
