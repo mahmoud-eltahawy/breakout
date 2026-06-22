@@ -51,8 +51,8 @@ fn main() {
             ..Default::default()
         }))
         .insert_resource(BallVelocity(Vec3 {
-            x: 2.,
-            y: 2.,
+            x: 4.,
+            y: 7.,
             z: 0.,
         }))
         .insert_resource(ClearColor(Color::srgb(0.0, 0.0, 0.0)))
@@ -161,7 +161,11 @@ fn setup_walls(mut gizmos: Gizmos) {
     }
 }
 
-fn move_ball(mut ball: Single<&mut Transform, With<Ball>>, mut velocity: ResMut<BallVelocity>) {
+fn move_ball(
+    bar: Single<&Transform, (With<Bar>, Without<Ball>)>,
+    mut ball: Single<&mut Transform, With<Ball>>,
+    mut velocity: ResMut<BallVelocity>,
+) {
     let mut new_position = ball.translation + velocity.0;
     if new_position.y >= (WINDOW_HEIGHT / 2) as f32 {
         velocity.0.y *= -1.;
@@ -172,5 +176,14 @@ fn move_ball(mut ball: Single<&mut Transform, With<Ball>>, mut velocity: ResMut<
         velocity.0.x *= -1.;
         new_position = ball.translation + velocity.0;
     }
+
+    if new_position.x >= bar.translation.x - BAR_SIZE.x
+        && new_position.x <= bar.translation.x + BAR_SIZE.x
+        && new_position.y <= bar.translation.y + BAR_SIZE.y
+    {
+        velocity.0.y *= -1.;
+        new_position = ball.translation + velocity.0;
+    }
+
     ball.translation = new_position;
 }
