@@ -19,6 +19,30 @@ const RECTS_ROWS: usize = 9;
 const BALL_SIZE: f32 = 9.;
 const BALL_INIT_POSITION: Vec2 = Vec2::new(0., 0.);
 
+const BALL_VELOCITY: Vec3 = Vec3 {
+    x: 2.,
+    y: 2.,
+    z: 0.,
+};
+
+const BOTTOM_LEFT: Vec2 = Vec2 {
+    x: -((WINDOW_WIDTH / 2) as f32),
+    y: -(WINDOW_HEIGHT as f32) / 2.,
+};
+const TOP_LEFT: Vec2 = Vec2 {
+    x: -((WINDOW_WIDTH / 2) as f32),
+    y: (WINDOW_HEIGHT as f32) / 2.,
+};
+const TOP_RIGHT: Vec2 = Vec2 {
+    x: (WINDOW_WIDTH / 2) as f32,
+    y: (WINDOW_HEIGHT as f32) / 2.,
+};
+const BOTTOM_RIGHT: Vec2 = Vec2 {
+    x: ((WINDOW_WIDTH / 2) as f32),
+    y: -(WINDOW_HEIGHT as f32) / 2.,
+};
+const CORNERS: [Vec2; 4] = [BOTTOM_LEFT, TOP_LEFT, TOP_RIGHT, BOTTOM_RIGHT];
+
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(WindowPlugin {
@@ -34,7 +58,7 @@ fn main() {
         }))
         .insert_resource(ClearColor(Color::srgb(0.0, 0.0, 0.0)))
         .add_systems(Startup, (setup, setup_rects, setup_bar, setup_ball))
-        .add_systems(Update, (bar_controller, setup_walls))
+        .add_systems(Update, (bar_controller, setup_walls, move_ball))
         .run();
 }
 
@@ -130,26 +154,12 @@ fn setup_ball(
     ));
 }
 
-const BOTTOM_LEFT: Vec2 = Vec2 {
-    x: -((WINDOW_WIDTH / 2) as f32),
-    y: -(WINDOW_HEIGHT as f32) / 2.,
-};
-const TOP_LEFT: Vec2 = Vec2 {
-    x: -((WINDOW_WIDTH / 2) as f32),
-    y: (WINDOW_HEIGHT as f32) / 2.,
-};
-const TOP_RIGHT: Vec2 = Vec2 {
-    x: (WINDOW_WIDTH / 2) as f32,
-    y: (WINDOW_HEIGHT as f32) / 2.,
-};
-const BOTTOM_RIGHT: Vec2 = Vec2 {
-    x: ((WINDOW_WIDTH / 2) as f32),
-    y: -(WINDOW_HEIGHT as f32) / 2.,
-};
-const CORNERS: [Vec2; 4] = [BOTTOM_LEFT, TOP_LEFT, TOP_RIGHT, BOTTOM_RIGHT];
-
 fn setup_walls(mut gizmos: Gizmos) {
     for (begin, end) in CORNERS.windows(2).map(|xs| (xs[0], xs[1])) {
         gizmos.line_2d(begin, end, GREEN);
     }
+}
+
+fn move_ball(mut ball: Single<&mut Transform, With<Ball>>) {
+    ball.translation += BALL_VELOCITY;
 }
