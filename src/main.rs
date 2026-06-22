@@ -57,7 +57,7 @@ fn main() {
         }))
         .insert_resource(ClearColor(Color::srgb(0.0, 0.0, 0.0)))
         .add_systems(Startup, (setup, setup_rects, setup_bar, setup_ball))
-        .add_systems(Update, (bar_controller, setup_walls, move_ball))
+        .add_systems(Update, (bar_controller, setup_walls, ball_interactions))
         .run();
 }
 #[derive(Resource)]
@@ -161,12 +161,16 @@ fn setup_walls(mut gizmos: Gizmos) {
     }
 }
 
-fn move_ball(
+fn ball_interactions(
+    mut commands: Commands,
     bar: Single<&Transform, (With<Bar>, Without<Ball>)>,
-    mut ball: Single<&mut Transform, With<Ball>>,
+    mut ball: Single<&mut Transform, (With<Ball>, Without<Bar>)>,
     mut velocity: ResMut<BallVelocity>,
+    rects: Query<(Entity, &Transform), (With<Rect>, Without<Ball>, Without<Bar>)>,
 ) {
     let mut new_position = ball.translation + velocity.0;
+
+    //walls
     if new_position.y >= (WINDOW_HEIGHT / 2) as f32 {
         velocity.0.y *= -1.;
         new_position = ball.translation + velocity.0;
@@ -177,12 +181,31 @@ fn move_ball(
         new_position = ball.translation + velocity.0;
     }
 
-    if new_position.x >= bar.translation.x - BAR_SIZE.x
-        && new_position.x <= bar.translation.x + BAR_SIZE.x
-        && new_position.y <= bar.translation.y + BAR_SIZE.y
+    //bar
+    if new_position.x >= bar.translation.x - BAR_SIZE.x / 2.
+        && new_position.x <= bar.translation.x + BAR_SIZE.x / 2.
+        && new_position.y <= bar.translation.y + BAR_SIZE.y / 2.
     {
         velocity.0.y *= -1.;
         new_position = ball.translation + velocity.0;
+    }
+    //rects
+    for (entity, transform) in rects.iter() {
+        if new_position.x >= transform.translation.x - RECT_SIZE.x
+            && new_position.x <= transform.translation.x + RECT_SIZE.x
+            && (new_position.y - transform.translation.y).abs() < RECT_SIZE.y / 2.
+        {
+            velocity.0.y *= -1.;
+            new_position = ball.translation + velocity.0;
+            commands.entity(entity).despawn();
+        } else if new_position.y >= transform.translation.y - RECT_SIZE.y
+            && new_position.y <= transform.translation.y + RECT_SIZE.y
+            && (new_position.x - transform.translation.x).abs() < RECT_SIZE.x / 2.
+        {
+            velocity.0.x *= -1.;
+            new_position = ball.translation + velocity.0;
+            commands.entity(entity).despawn();
+        }
     }
 
     ball.translation = new_position;
