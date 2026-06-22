@@ -19,12 +19,6 @@ const RECTS_ROWS: usize = 9;
 const BALL_SIZE: f32 = 9.;
 const BALL_INIT_POSITION: Vec2 = Vec2::new(0., 0.);
 
-const BALL_VELOCITY: Vec3 = Vec3 {
-    x: 2.,
-    y: 2.,
-    z: 0.,
-};
-
 const BOTTOM_LEFT: Vec2 = Vec2 {
     x: -((WINDOW_WIDTH / 2) as f32),
     y: -(WINDOW_HEIGHT as f32) / 2.,
@@ -56,11 +50,18 @@ fn main() {
             }),
             ..Default::default()
         }))
+        .insert_resource(BallVelocity(Vec3 {
+            x: 2.,
+            y: 2.,
+            z: 0.,
+        }))
         .insert_resource(ClearColor(Color::srgb(0.0, 0.0, 0.0)))
         .add_systems(Startup, (setup, setup_rects, setup_bar, setup_ball))
         .add_systems(Update, (bar_controller, setup_walls, move_ball))
         .run();
 }
+#[derive(Resource)]
+struct BallVelocity(Vec3);
 
 #[derive(Component)]
 struct Rect;
@@ -160,6 +161,16 @@ fn setup_walls(mut gizmos: Gizmos) {
     }
 }
 
-fn move_ball(mut ball: Single<&mut Transform, With<Ball>>) {
-    ball.translation += BALL_VELOCITY;
+fn move_ball(mut ball: Single<&mut Transform, With<Ball>>, mut velocity: ResMut<BallVelocity>) {
+    let mut new_position = ball.translation + velocity.0;
+    if new_position.y >= (WINDOW_HEIGHT / 2) as f32 {
+        velocity.0.y *= -1.;
+        new_position = ball.translation + velocity.0;
+    }
+    if new_position.x >= (WINDOW_WIDTH / 2) as f32 || new_position.x <= -((WINDOW_WIDTH / 2) as f32)
+    {
+        velocity.0.x *= -1.;
+        new_position = ball.translation + velocity.0;
+    }
+    ball.translation = new_position;
 }
