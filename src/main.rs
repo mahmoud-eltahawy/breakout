@@ -14,7 +14,7 @@ const RECT_GAP: f32 = 10.;
 const BAR_SIZE: Vec2 = Vec2::new(140., 10.);
 
 const RECTS_COLUMNS: usize = 14;
-const RECTS_ROWS: usize = 9;
+const RECTS_ROWS: usize = 8;
 
 const BALL_SIZE: f32 = 9.;
 const BALL_INIT_POSITION: Vec2 = Vec2::new(0., 0.);
@@ -51,13 +51,22 @@ fn main() {
             ..Default::default()
         }))
         .insert_resource(BallVelocity(Vec3 {
-            x: 4.,
-            y: 7.,
+            x: 1.,
+            y: 2.,
             z: 0.,
         }))
         .insert_resource(ClearColor(Color::srgb(0.0, 0.0, 0.0)))
         .add_systems(Startup, (setup, setup_rects, setup_bar, setup_ball))
-        .add_systems(Update, (bar_controller, setup_walls, ball_interactions))
+        .add_systems(
+            Update,
+            (
+                bar_controller,
+                setup_walls,
+                detect_wall_hit,
+                detect_walls_hit,
+                detect_bar_hit,
+            ),
+        )
         .run();
 }
 #[derive(Resource)]
@@ -65,6 +74,15 @@ struct BallVelocity(Vec3);
 
 #[derive(Component)]
 struct Rect;
+
+#[derive(Component, Clone)]
+enum RectGift {
+    None,
+    BarExtend,
+    ExtraBall,
+    Extra2Balls,
+    Extra3Balls,
+}
 
 fn setup(mut commands: Commands) {
     commands.spawn(Camera2d);
@@ -80,6 +98,13 @@ fn setup_rects(
     let rect_y = WINDOW_HEIGHT as f32 / 2. - RECT_SIZE.y / 2. - WINDOW_MARGIN;
 
     for i in 1..=(RECTS_COLUMNS / 2) {
+        let gift = match i % 4 {
+            0 => RectGift::BarExtend,
+            1 => RectGift::ExtraBall,
+            2 => RectGift::Extra2Balls,
+            3 => RectGift::Extra3Balls,
+            _ => RectGift::None,
+        };
         for j in 0..RECTS_ROWS {
             commands.spawn((
                 Mesh2d(rect_mesh.clone()),
@@ -89,6 +114,7 @@ fn setup_rects(
                     rect_y - (RECT_SIZE.y + RECT_GAP) * j as f32,
                     0.,
                 ),
+                gift.clone(),
                 Rect,
             ));
             commands.spawn((
@@ -161,12 +187,9 @@ fn setup_walls(mut gizmos: Gizmos) {
     }
 }
 
-fn ball_interactions(
-    mut commands: Commands,
-    bar: Single<&Transform, (With<Bar>, Without<Ball>)>,
-    mut ball: Single<&mut Transform, (With<Ball>, Without<Bar>)>,
+fn detect_wall_hit(
+    mut ball: Single<&mut Transform, With<Ball>>,
     mut velocity: ResMut<BallVelocity>,
-    rects: Query<(Entity, &Transform), (With<Rect>, Without<Ball>, Without<Bar>)>,
 ) {
     let mut new_position = ball.translation + velocity.0;
 
@@ -181,7 +204,16 @@ fn ball_interactions(
         new_position = ball.translation + velocity.0;
     }
 
-    //bar
+    ball.translation = new_position;
+}
+
+fn detect_bar_hit(
+    bar: Single<&Transform, (With<Bar>, Without<Ball>)>,
+    mut ball: Single<&mut Transform, (With<Ball>, Without<Bar>)>,
+    mut velocity: ResMut<BallVelocity>,
+) {
+    let mut new_position = ball.translation + velocity.0;
+
     if new_position.x >= bar.translation.x - BAR_SIZE.x / 2.
         && new_position.x <= bar.translation.x + BAR_SIZE.x / 2.
         && new_position.y <= bar.translation.y + BAR_SIZE.y / 2.
@@ -189,6 +221,18 @@ fn ball_interactions(
         velocity.0.y *= -1.;
         new_position = ball.translation + velocity.0;
     }
+
+    ball.translation = new_position;
+}
+
+fn detect_walls_hit(
+    mut commands: Commands,
+    mut ball: Single<&mut Transform, With<Ball>>,
+    mut velocity: ResMut<BallVelocity>,
+    rects: Query<(Entity, &Transform), (With<Rect>, Without<Ball>, Without<Bar>)>,
+) {
+    let mut new_position = ball.translation + velocity.0;
+
     //rects
     for (entity, transform) in rects.iter() {
         if new_position.x >= transform.translation.x - RECT_SIZE.x
