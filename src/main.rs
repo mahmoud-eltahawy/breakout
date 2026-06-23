@@ -75,7 +75,7 @@ struct BallVelocity(Vec3);
 #[derive(Component)]
 struct Rect;
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Debug)]
 enum RectGift {
     None,
     BarExtend,
@@ -125,6 +125,7 @@ fn setup_rects(
                     rect_y - (RECT_SIZE.y + RECT_GAP) * j as f32,
                     0.,
                 ),
+                gift.clone(),
                 Rect,
             ));
         }
@@ -229,7 +230,7 @@ fn detect_walls_hit(
     mut commands: Commands,
     mut ball: Single<&mut Transform, With<Ball>>,
     mut velocity: ResMut<BallVelocity>,
-    rects: Query<(Entity, &Transform), (With<Rect>, Without<Ball>, Without<Bar>)>,
+    rects: Query<(Entity, &Transform, &RectGift), (With<Rect>, Without<Ball>, Without<Bar>)>,
 ) {
     let mut new_position = ball.translation + velocity.0;
 
@@ -239,7 +240,7 @@ fn detect_walls_hit(
         None,
     }
 
-    for (entity, transform) in rects.iter() {
+    for (entity, transform, gift) in rects.iter() {
         let r = if new_position.x >= transform.translation.x - RECT_SIZE.x
             && new_position.x <= transform.translation.x + RECT_SIZE.x
             && (new_position.y - transform.translation.y).abs() < RECT_SIZE.y / 2.
@@ -265,6 +266,14 @@ fn detect_walls_hit(
         match r {
             ReflectAxis::X | ReflectAxis::Y => {
                 new_position = ball.translation + velocity.0;
+                //TODO : spawn gifts and handle drawing
+                match gift {
+                    RectGift::None => (),
+                    RectGift::BarExtend => (),
+                    RectGift::ExtraBall => (),
+                    RectGift::Extra2Balls => (),
+                    RectGift::Extra3Balls => (),
+                }
                 commands.entity(entity).despawn();
             }
             ReflectAxis::None => (),
