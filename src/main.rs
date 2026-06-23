@@ -233,22 +233,41 @@ fn detect_walls_hit(
 ) {
     let mut new_position = ball.translation + velocity.0;
 
-    //rects
+    enum ReflectAxis {
+        X,
+        Y,
+        None,
+    }
+
     for (entity, transform) in rects.iter() {
-        if new_position.x >= transform.translation.x - RECT_SIZE.x
+        let r = if new_position.x >= transform.translation.x - RECT_SIZE.x
             && new_position.x <= transform.translation.x + RECT_SIZE.x
             && (new_position.y - transform.translation.y).abs() < RECT_SIZE.y / 2.
         {
-            velocity.0.y *= -1.;
-            new_position = ball.translation + velocity.0;
-            commands.entity(entity).despawn();
+            ReflectAxis::Y
         } else if new_position.y >= transform.translation.y - RECT_SIZE.y
             && new_position.y <= transform.translation.y + RECT_SIZE.y
             && (new_position.x - transform.translation.x).abs() < RECT_SIZE.x / 2.
         {
-            velocity.0.x *= -1.;
-            new_position = ball.translation + velocity.0;
-            commands.entity(entity).despawn();
+            ReflectAxis::X
+        } else {
+            ReflectAxis::None
+        };
+        match r {
+            ReflectAxis::X => {
+                velocity.0.x *= -1.;
+            }
+            ReflectAxis::Y => {
+                velocity.0.y *= -1.;
+            }
+            ReflectAxis::None => (),
+        }
+        match r {
+            ReflectAxis::X | ReflectAxis::Y => {
+                new_position = ball.translation + velocity.0;
+                commands.entity(entity).despawn();
+            }
+            ReflectAxis::None => (),
         }
     }
 
